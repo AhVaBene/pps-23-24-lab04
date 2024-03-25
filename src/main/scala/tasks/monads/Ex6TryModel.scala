@@ -31,10 +31,11 @@ object Ex6TryModel:
       case TryImpl.Failure(_) => other
 
   given Monad[Try] with
-    override def unit[A](value: A): Try[A] = ???
+    override def unit[A](value: A): Try[A] = success(value)
     extension [A](m: Try[A]) 
-
-      override def flatMap[B](f: A => Try[B]): Try[B] = ??? 
+      override def flatMap[B](f: A => Try[B]): Try[B] = m match
+        case TryImpl.Success(value) => f(value)
+        case TryImpl.Failure(exception) => failure(exception)
       
 @main def main: Unit = 
   import Ex6TryModel.*
@@ -44,7 +45,13 @@ object Ex6TryModel:
     b <- success(30)
   yield a + b
 
-  assert(result.getOrElse(-1) == 40)
+  val resultM = 
+    success(10).flatMap(a => 
+      success(30).map(b => 
+        a + b))
+
+  println("1  => " + (result.getOrElse(-1) == 40))
+  println("1M => " + (resultM.getOrElse(-1) == 40))
 
   val result2 = for 
     a <- success(10)
@@ -52,11 +59,25 @@ object Ex6TryModel:
     c <- success(30)
   yield a + c
 
-  assert(success(20).map(_ + 10).getOrElse(-1) == 30)
-  assert(result2.getOrElse(-1) == -1)
+  val result2M = 
+    success(10).flatMap(a => 
+      failure(new RuntimeException("error")).flatMap(b => 
+        success(30).map(c => a + c)))
+  println("2  => " + (result2.getOrElse(-1) == -1))
+  println("2M => " + (result2M.getOrElse(-1) == -1))
 
   val result3 = for
     a <- exec(10)
     b <- exec(new RuntimeException("error"))
     c <- exec(30)
   yield a + c
+
+  val result3M = 
+    exec(10).flatMap(a => 
+      exec(new RuntimeException("error")).flatMap(b => 
+        exec(30).map(c => a + c)))
+
+  println("3  => " + (result3.getOrElse(-1) == 40))
+  println("3M => " + (result3.getOrElse(-1) == 40))
+
+  println("4  => " + (success(20).map(_ + 10).getOrElse(-1) == 30))
