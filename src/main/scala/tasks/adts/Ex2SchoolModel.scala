@@ -1,5 +1,5 @@
 package tasks.adts
-import u03.Sequences.*
+import u03.extensionmethods.Sequences.*
 import u03.Optionals.*
 import u02.AlgebraicDataTypes.Person
 
@@ -28,3 +28,15 @@ object SchoolModel:
       def nameOfCourse(teacher: Teacher): String
       def setTeacherToCourse(teacher: Teacher, course: Course): School
       def coursesOfATeacher(teacher: Teacher): Sequence[Course]
+
+  object BasicSchoolModule extends SchoolModule:
+    private case class SchoolModuleImpl(teachers: Sequence[Teacher], courses: Sequence[Course])
+    opaque type School = SchoolModuleImpl
+
+    extension (school: School)
+      def addTeacher(name: String): School = 
+        val newTeacher = Teacher(name)
+        school.teachers = Cons(newTeacher, school.teachers)
+
+      def teacherByName(name: String): Optional[Teacher] = 
+        school.teachers.filter(t => t.name == name)
